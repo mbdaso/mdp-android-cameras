@@ -7,6 +7,7 @@ import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.view.View;
+import android.widget.TextView;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
@@ -15,8 +16,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.example.cameras.CCTV;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -35,13 +36,21 @@ public class MainActivity extends AppCompatActivity {
         //Crear un array con los nombres de las cámaras
 
         listView = findViewById(R.id.listview);
+        listView.setOnItemClickListener(new OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
+                // When clicked, show a toast with the TextView text
+                Log.d(TAG, "Download image: " + camerasURLS_ArrayList.get(position));
+            }
+        });
 
         adapter = new ArrayAdapter(this,
-                android.R.layout.simple_list_item_checked,
-                camerasURLS_ArrayList);
+                android.R.layout.simple_list_item_single_choice,
+                cameraNames);
     }
 
-    public String [] parseCameraURLsXML(){
+    public void parseCameraURLsXML(){
+        camerasURLS_ArrayList.clear();
+        cameraNames.clear();
         XmlPullParserFactory parserFactory;
         try {
             parserFactory = XmlPullParserFactory.newInstance();
@@ -50,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
             parser.setInput(is, null);
             int eventType = parser.getEventType();
+
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 String elementName;
                 elementName = parser.getName();
@@ -61,15 +71,13 @@ public class MainActivity extends AppCompatActivity {
                             cameraURL = cameraURL.substring(0, cameraURL.indexOf(".jpg") + 4);
                             camerasURLS_ArrayList.add(cameraURL);
                         }
-//                        else if ("ExtendedData".equals(elementName)){
-//                            Log.d(TAG, "Data tag 1! " + parser.getName());
-//                            parser.next();
-//                            Log.d(TAG, "Data tag 2! " + parser.getName());
-//                            if (parser.getName() == "Data")
-//                                Log.d(TAG, "My Data: " + parser.getAttributeValue(null, "name"));
-//                            parser.next();
-//                            Log.d(TAG, "Data tag 3! " + parser.getName());
-//                        }
+                        else if ("Data".equals(elementName)){
+                            Log.d(TAG, parser.getAttributeValue(null, "name"));
+                            if ("Nombre".equals(parser.getAttributeValue(null, "name"))){
+                                parser.nextTag();
+                                cameraNames.add(parser.nextText());
+                            }
+                        }
                     break;
                 } //switch
                 eventType = parser.next();
@@ -77,25 +85,27 @@ public class MainActivity extends AppCompatActivity {
         } //Try
         catch (Exception e){
             Log.d(TAG, "Exception");
-            Log.d(TAG, e.getMessage());
+            String err = (e.getMessage()==null)?"SD Card failed":e.getMessage();
+            Log.d("sdcard-err2:",err);
         } //Catch
-        String [] pepe = new String [100];
-        return pepe;
     } //parseCameraNames
 
     public void parseCameraURLsJSON(){
         camerasURLS_ArrayList.clear();
+        cameraNames.clear();
         try {
             Gson gson = new Gson();
             InputStream is = getApplicationContext().getAssets().open("CCTV.json");
             CCTV cctv = gson.fromJson(new InputStreamReader(is), CCTV.class);
 
             int nCameras = cctv.kml.Document.Placemark.length;
-//            String firstCameraName = cctv.kml.Document.Placemark[0].ExtendedData.Data[1].Value );
-//            String firstCameraDescription = cctv.kml.Document.Placemark[0].description;
-
-            for(PLACEMARK pm : cctv.kml.Document.Placemark){
-                Log.d(TAG, "placemark");
+            PLACEMARK [] pmArray = cctv.kml.Document.Placemark;
+            for(int i = 0; i < nCameras; i++){
+                String cameraURL = pmArray[i].description;
+                cameraURL = cameraURL.substring(cameraURL.indexOf("http:"));
+                cameraURL = cameraURL.substring(0, cameraURL.indexOf(".jpg") + 4);
+                camerasURLS_ArrayList.add(cameraURL);
+                cameraNames.add(pmArray[i].ExtendedData.Data[1].Value);
             }
         }
         catch(Exception e){

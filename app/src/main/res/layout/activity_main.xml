@@ -36,11 +36,12 @@
             android:choiceMode="singleChoice"
             android:layout_width="wrap_content"
             android:layout_height="300dp"/>
-        <TextView
-            android:id="@+id/textview"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="TEXTO"/>
+
+        <!--<ImageView-->
+            <!--android:id="@+id/imageview"-->
+            <!--android:tag="Pepe"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content" />-->
     </LinearLayout>
 
 
