@@ -2,9 +2,14 @@ package com.example.cameras;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.renderscript.ScriptGroup;
 import android.util.Log;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.view.View;
 import android.widget.TextView;
@@ -13,6 +18,7 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import com.google.gson.Gson;
@@ -20,12 +26,11 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class MainActivity extends AppCompatActivity {
-
     List<String> cameraNames = new ArrayList<>();
     List<String> camerasURLS_ArrayList = new ArrayList<>();
     String TAG = "pepe";
     ArrayAdapter adapter;
-
+    ImageView imageView;
     ListView listView;
 
     @Override
@@ -36,10 +41,23 @@ public class MainActivity extends AppCompatActivity {
         //Crear un array con los nombres de las cámaras
 
         listView = findViewById(R.id.listview);
+        imageView = findViewById(R.id.imageview);
         listView.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
                 // When clicked, show a toast with the TextView text
                 Log.d(TAG, "Download image: " + camerasURLS_ArrayList.get(position));
+
+                try{
+                    URL url = new URL(camerasURLS_ArrayList.get(position));
+
+                    DownloadImageTask t = new DownloadImageTask();
+                    t.execute(url);
+//                    Log.d(TAG, "image returned: " + image);
+                    //imageView.setImageBitmap(image.);
+                }
+                catch(Exception e){
+                    Log.d(TAG, "listView listener Exception: " + e.getMessage());
+                }
             }
         });
 
@@ -123,6 +141,33 @@ public class MainActivity extends AppCompatActivity {
         parseCameraURLsJSON();
         listView.setAdapter(adapter);
     }
-} //MainActivity
 
+    private class DownloadImageTask extends AsyncTask<URL, Integer, Bitmap>{
+        @Override
+        protected Bitmap doInBackground(URL ... urls){
+            Bitmap image = null;
+            try{
+                InputStream is = urls[0].openStream();
+
+                image = BitmapFactory.decodeStream(is);
+
+                Log.d(TAG, "image decoded: " + image);
+            }
+            catch (Exception e){
+                Log.d(TAG,  "Exception in DownloadImageTask: " +  e.getMessage());
+            }
+            return image;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap image){
+            try {
+                imageView.setImageBitmap(image);
+            }
+            catch(Exception e){
+                Log.d(TAG, "onPostExecute exception: " + image +  " " + e.getMessage());
+            }
+        }
+    }
+} //MainActivity
 
